@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"github.com/influxdata/influxdb/tsdb/tsm1"
 	"math"
 	"math/rand"
 	"reflect"
@@ -12,6 +11,7 @@ import (
 	"github.com/influxdata/influxdb"
 	"github.com/influxdata/influxdb/kit/prom/promtest"
 	"github.com/influxdata/influxdb/tsdb"
+	"github.com/influxdata/influxdb/tsdb/tsm1"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -58,7 +58,7 @@ func TestRetentionService(t *testing.T) {
 	}
 
 	gotMatched := map[string]struct{}{}
-	engine.DeleteBucketRangeFn = func(orgID, bucketID influxdb.ID, from, to int64) error {
+	engine.DeleteBucketRangeFn = func(ctx context.Context, orgID, bucketID influxdb.ID, from, to int64) error {
 		if from != math.MinInt64 {
 			t.Fatalf("got from %d, expected %d", from, math.MinInt64)
 		}
@@ -152,17 +152,17 @@ func genMeasurementName() []byte {
 }
 
 type TestEngine struct {
-	DeleteBucketRangeFn func(influxdb.ID, influxdb.ID, int64, int64) error
+	DeleteBucketRangeFn func(context.Context, influxdb.ID, influxdb.ID, int64, int64) error
 }
 
 func NewTestEngine() *TestEngine {
 	return &TestEngine{
-		DeleteBucketRangeFn: func(influxdb.ID, influxdb.ID, int64, int64) error { return nil },
+		DeleteBucketRangeFn: func(context.Context, influxdb.ID, influxdb.ID, int64, int64) error { return nil },
 	}
 }
 
-func (e *TestEngine) DeleteBucketRange(orgID, bucketID influxdb.ID, min, max int64) error {
-	return e.DeleteBucketRangeFn(orgID, bucketID, min, max)
+func (e *TestEngine) DeleteBucketRange(ctx context.Context, orgID, bucketID influxdb.ID, min, max int64) error {
+	return e.DeleteBucketRangeFn(ctx, orgID, bucketID, min, max)
 }
 
 type TestSnapshotter struct{}
