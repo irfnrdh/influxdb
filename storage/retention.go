@@ -146,6 +146,7 @@ func (s *retentionEnforcer) expireData(ctx context.Context, buckets []*influxdb.
 				zap.Error(err))
 			tracing.LogError(span, err)
 		}
+		s.tracker.IncChecks(err == nil)
 
 		span.Finish()
 	}
@@ -180,6 +181,19 @@ func (t *retentionTracker) Labels() prometheus.Labels {
 		l[k] = v
 	}
 	return l
+}
+
+// IncChecks signals that a check happened for some bucket.
+func (t *retentionTracker) IncChecks(success bool) {
+	labels := t.Labels()
+
+	if success {
+		labels["status"] = "ok"
+	} else {
+		labels["status"] = "error"
+	}
+
+	t.metrics.Checks.With(labels).Inc()
 }
 
 // CheckDuration records the overall duration of a full retention check.
